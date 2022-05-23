@@ -1,6 +1,0 @@
-numpy
-pandas
-scikit_learn
-tqdm
-torch==1.9.0
-timm
