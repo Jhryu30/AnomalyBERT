@@ -1,3 +1,4 @@
+.gitignore
 git_token.txt
 .ipynb_checkpoints/
 __pycache__/
