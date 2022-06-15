@@ -21,6 +21,7 @@ class AnomalyTransformer(nn.Module):
         linear_embedding : embedding layer to feed data into Transformer encoder
         transformer_encoder : Transformer encoder body
         mlp_layers : MLP layers to return output data
+        discriminator : anomaly discriminator module
         d_embed : embedding dimension (in Transformer encoder)
         max_seq_len : maximum length of sequence (= window size)
         mask_token_rate : value or range of masking percentage
@@ -89,9 +90,9 @@ class AnomalyTransformer(nn.Module):
         else:
             masked_out = embedded_out
             
-        # Reconstruct data.
+        # Process data.
         transformer_out = self.transformer_encoder(masked_out)
-        return self.mlp_layers(transformer_out)
+        return self.mlp_layers(transformer_out) + x, transformer_out
     
     
     
@@ -141,4 +142,9 @@ def get_anomaly_transformer(d_data,
     nn.init.xavier_uniform_(mlp_layers[2].weight)
     nn.init.zeros_(mlp_layers[2].bias)
     
-    return AnomalyTransformer(linear_embedding, transformer_encoder, mlp_layers, d_embed, max_seq_len, mask_token_rate)
+    return AnomalyTransformer(linear_embedding,
+                              transformer_encoder,
+                              mlp_layers,
+                              d_embed,
+                              max_seq_len,
+                              mask_token_rate)

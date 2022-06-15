@@ -36,12 +36,13 @@ def load_data(dataset, base_dir, output_folder):
         with open(os.path.join(dataset_folder, 'labeled_anomalies.csv'), 'r') as file:
             csv_reader = csv.reader(file, delimiter=',')
             res = [row for row in csv_reader][1:]
-        res = sorted(res, key=lambda k: k[0])
+        res = sorted(res, key=lambda k: k[0][0]+'-{:2d}'.format(int(k[0][2:])))        
         label_folder = os.path.join(dataset_folder, 'test_label')
         if not os.path.exists(label_folder):
             os.mkdir(label_folder)
 #         makedirs(label_folder, exist_ok=True)
-        data_info = [row for row in res if row[1] == dataset and row[0] != 'P-2']
+#         data_info = [row for row in res if row[1] == dataset and row[0] != 'P-2']
+        data_info = [row for row in res if row[1] == dataset]
         labels = []
         for row in data_info:
             anomalies = ast.literal_eval(row[2])
