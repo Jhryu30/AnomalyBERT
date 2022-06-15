@@ -1,6 +1,0 @@
-.gitignore
-git_token.txt
-.ipynb_checkpoints/
-__pycache__/
-*.ipynb
-logs/
