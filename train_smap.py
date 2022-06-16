@@ -1,4 +1,4 @@
-import os, time, cv2
+import os, time
 import numpy as np
 import torch
 import torch.nn as nn
@@ -7,6 +7,7 @@ import argparse
 from timm.scheduler.cosine_lr import CosineLRScheduler
 from torch.utils.tensorboard import SummaryWriter
 
+import utils.config as config
 from models.anomaly_transformer import get_anomaly_transformer
 from utils.datasets import get_data
 
@@ -37,7 +38,7 @@ def main(options):
     if options.checkpoint != None:
         model.load_state_dict(torch.load(options.checkpoint, map_location='cpu'))
 
-    log_dir = 'logs/' + time.strftime('%y%m%d%H%M%S_', time.localtime(time.time())) + 'smap_test/'
+    log_dir = config.LOG_DIR + time.strftime('%y%m%d%H%M%S_', time.localtime(time.time())) + 'smap_test/'
     os.mkdir(log_dir)
     os.mkdir(log_dir + 'state')
     

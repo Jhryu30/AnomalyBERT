@@ -10,7 +10,7 @@ from utils.datasets import get_data
 
 def main(options):
     # SMAP dataset
-    (_, _), (test_smap, test_label_smap) = get_data(options.dataset)
+    (_, _), (test_smap, test_label_smap) = get_data('SMAP')
     
     # Test class
     with open('smap_test_channel.json', 'r') as f:
@@ -170,7 +170,6 @@ if __name__ == "__main__":
     
     parser.add_argument("--model", required=True, type=str)
     parser.add_argument("--state_dict", required=True, type=str)
-    parser.add_argument("--dataset", default='SMAP', type=str)
     parser.add_argument("--batch_size", default=16, type=int)
     parser.add_argument("--window_sliding", default=4, type=int)
     
