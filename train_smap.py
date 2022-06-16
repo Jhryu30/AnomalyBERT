@@ -38,12 +38,12 @@ def main(options):
     if options.checkpoint != None:
         model.load_state_dict(torch.load(options.checkpoint, map_location='cpu'))
 
-    log_dir = config.LOG_DIR + time.strftime('%y%m%d%H%M%S_', time.localtime(time.time())) + 'smap_test/'
+    log_dir = os.path.join(config.LOG_DIR, time.strftime('%y%m%d%H%M%S_', time.localtime(time.time())) + 'smap_test/')
     os.mkdir(log_dir)
-    os.mkdir(log_dir + 'state')
+    os.mkdir(os.path.join(log_dir, 'state'))
     
     summary_writer = SummaryWriter(log_dir)
-    torch.save(model, log_dir + 'model.pt')
+    torch.save(model, os.path.join(log_dir, 'model.pt'))
 
     # Train model.
     max_iters = options.max_steps
@@ -216,7 +216,7 @@ def main(options):
                 print('iter ', i, ',\tloss : {:.10f}'.format(loss.item()), ',\torigin err : {:.10f}'.format(origin), ',\trec : {:.10f}'.format(rec), sep='')
                 print('\t\terr rate : {:.10f}'.format(rec/origin), sep='')
                 print()
-            torch.save(model.state_dict(), log_dir + 'state/state_dict_step_{}.pt'.format(i))
+            torch.save(model.state_dict(), os.path.join(log_dir, 'state/state_dict_step_{}.pt'.format(i)))
 
         # Update gradients.
         optimizer.zero_grad()
@@ -227,7 +227,7 @@ def main(options):
         optimizer.step()
         scheduler.step_update(i)
 
-    torch.save(model.state_dict(), log_dir + 'state_dict.pt')
+    torch.save(model.state_dict(), os.path.join(log_dir, 'state_dict.pt'))
 
 
 
@@ -250,7 +250,7 @@ if __name__ == "__main__":
     parser.add_argument("--peak_noising", default=0., type=float)
     parser.add_argument("--white_noising", default=False, action='store_true')
     
-    parser.add_argument("--loss", default='mse', type=str)
+    parser.add_argument("--loss", default='l1', type=str)
     parser.add_argument("--total_loss", default=0.2, type=float)
     parser.add_argument("--partial_loss", default=1., type=float)
     parser.add_argument("--contrastive_loss", default=0., type=float)
