@@ -66,7 +66,7 @@ class EncoderLayer(nn.Module):
         out1 = self.dropout_layer(out1) + x
         
         out2 = self.norm_layers[1](out1)
-        out2 = self.feed_forward_layer(out1)
+        out2 = self.feed_forward_layer(out2)
         return self.dropout_layer(out2) + out1
     
     
