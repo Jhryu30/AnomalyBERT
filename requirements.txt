@@ -1,5 +1,7 @@
 numpy
-pandas
 scikit_learn
 tqdm
 timm
+pytorch-model-summary
+tensorboard
+matplotlib
