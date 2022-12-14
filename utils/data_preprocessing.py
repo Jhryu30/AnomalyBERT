@@ -5,10 +5,12 @@ import csv
 import os
 import sys
 from pickle import dump
+import json
 
 import argparse
 
 import numpy as np
+from sklearn.preprocessing import MinMaxScaler
 
 # makedirs(output_folder, exist_ok=True)
 
@@ -17,20 +19,42 @@ def load_and_save(category, filename, dataset, dataset_folder, output_folder):
     temp = np.genfromtxt(os.path.join(dataset_folder, category, filename),
                          dtype=np.float32,
                          delimiter=',')
-    print(dataset, category, filename, temp.shape)
-    with open(os.path.join(output_folder, dataset + "_" + category + ".pkl"), "wb") as file:
-        dump(temp, file)
+#     print(dataset, category, filename, temp.shape)
+#     with open(os.path.join(output_folder, dataset + "_" + category + ".pkl"), "wb") as file:
+#         dump(temp, file)
+    return temp
 
 
 def load_data(dataset, base_dir, output_folder):
     if dataset == 'SMD':
         dataset_folder = os.path.join(base_dir, 'ServerMachineDataset')
         file_list = os.listdir(os.path.join(dataset_folder, "train"))
+        
+        train_files = []
+        test_files = []
+        label_files = []
+        file_length = [0]
         for filename in file_list:
             if filename.endswith('.txt'):
-                load_and_save('train', filename, filename.strip('.txt'), dataset_folder, output_folder)
-                load_and_save('test', filename, filename.strip('.txt'), dataset_folder, output_folder)
-                load_and_save('test_label', filename, filename.strip('.txt'), dataset_folder, output_folder)
+                train_files.append(load_and_save('train', filename, filename.strip('.txt'), dataset_folder, output_folder))
+                test_files.append(load_and_save('test', filename, filename.strip('.txt'), dataset_folder, output_folder))
+                label_files.append(load_and_save('test_label', filename, filename.strip('.txt'), dataset_folder, output_folder))
+                file_length.append(len(label_files[-1]))
+        
+        train_files = np.concatenate(train_files, axis=0)
+        test_files = np.concatenate(test_files, axis=0)
+        label_files = np.concatenate(label_files, axis=0)
+        np.save(os.path.join(output_folder, dataset + "_train.npy"), train_files)
+        np.save(os.path.join(output_folder, dataset + "_test.npy"), test_files)
+        np.save(os.path.join(output_folder, dataset + "_test_label.npy"), label_files)
+        
+        file_length = np.cumsum(np.array(file_length)).tolist()
+        channel_divisions = []
+        for i in range(len(file_length)-1):
+            channel_divisions.append([file_length[i], file_length[i+1]])
+        with open(os.path.join(output_folder, dataset + "_" + 'test_channel.json'), 'w') as file:
+            json.dump(channel_divisions, file)
+                
     elif dataset == 'SMAP' or dataset == 'MSL':
         dataset_folder = os.path.join(base_dir, 'data')
         with open(os.path.join(dataset_folder, 'labeled_anomalies.csv'), 'r') as file:
@@ -41,9 +65,13 @@ def load_data(dataset, base_dir, output_folder):
         if not os.path.exists(label_folder):
             os.mkdir(label_folder)
 #         makedirs(label_folder, exist_ok=True)
-#         data_info = [row for row in res if row[1] == dataset and row[0] != 'P-2']
-        data_info = [row for row in res if row[1] == dataset]
+        data_info = [row for row in res if row[1] == dataset and row[0] != 'P-2']
+#         data_info = [row for row in res if row[1] == dataset]
         labels = []
+        class_divisions = {}
+        channel_divisions = []
+        current_index = 0
+    
         for row in data_info:
             anomalies = ast.literal_eval(row[2])
             length = int(row[-1])
@@ -51,10 +79,25 @@ def load_data(dataset, base_dir, output_folder):
             for anomaly in anomalies:
                 label[anomaly[0]:anomaly[1] + 1] = True
             labels.extend(label)
+            
+            _class = row[0][0]
+            if _class in class_divisions.keys():
+                class_divisions[_class][1] += length
+            else:
+                class_divisions[_class] = [current_index, current_index+length]
+            channel_divisions.append([current_index, current_index+length])
+            current_index += length
+            
         labels = np.asarray(labels)
         print(dataset, 'test_label', labels.shape)
-        with open(os.path.join(output_folder, dataset + "_" + 'test_label' + ".pkl"), "wb") as file:
-            dump(labels, file)
+#         with open(os.path.join(output_folder, dataset + "_" + 'test_label' + ".pkl"), "wb") as file:
+#             dump(labels, file)
+        np.save(os.path.join(output_folder, dataset + "_" + 'test_label' + ".npy"), labels)
+        
+        with open(os.path.join(output_folder, dataset + "_" + 'test_class.json'), 'w') as file:
+            json.dump(class_divisions, file)
+        with open(os.path.join(output_folder, dataset + "_" + 'test_channel.json'), 'w') as file:
+            json.dump(channel_divisions, file)
 
         def concatenate_and_save(category):
             data = []
@@ -64,8 +107,10 @@ def load_data(dataset, base_dir, output_folder):
                 data.extend(temp)
             data = np.asarray(data)
             print(dataset, category, data.shape)
-            with open(os.path.join(output_folder, dataset + "_" + category + ".pkl"), "wb") as file:
-                dump(data, file)
+#             with open(os.path.join(output_folder, dataset + "_" + category + ".pkl"), "wb") as file:
+#                 dump(data, file)
+            data = MinMaxScaler().fit_transform(data)
+            np.save(os.path.join(output_folder, dataset + "_" + category + ".npy"), data)
 
         for c in ['train', 'test']:
             concatenate_and_save(c)
