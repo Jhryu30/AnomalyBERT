@@ -43,7 +43,7 @@ def main(options):
     if options.checkpoint != None:
         model.load_state_dict(torch.load(options.checkpoint, map_location='cpu'))
 
-    log_dir = os.path.join(config.LOG_DIR, time.strftime('%y%m%d%H%M%S', time.localtime(time.time())))
+    log_dir = os.path.join(config.LOG_DIR, time.strftime('%y%m%d%H%M%S_'+options.dataset, time.localtime(time.time())))
     os.mkdir(log_dir)
     os.mkdir(os.path.join(log_dir, 'state'))
     
@@ -370,8 +370,8 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint", default=None, type=str)
     parser.add_argument("--initial_iter", default=0, type=int)
     
-    parser.add_argument("--dataset", default='SMAP', type=str, help='SMAP/MSL')
-    parser.add_argument("--replacing_data", default=None, type=str, help='SMAP/MSL')
+    parser.add_argument("--dataset", default='SMAP', type=str, help='SMAP/MSL/SMD')
+    parser.add_argument("--replacing_data", default=None, type=str, help='None(default)/SMAP/MSL/SMD')
     
     parser.add_argument("--batch_size", default=16, type=int)
     parser.add_argument("--window_size", default=512, type=int)
@@ -390,7 +390,7 @@ if __name__ == "__main__":
     parser.add_argument("--flip_replacing_interval", default='all', type=str,
                         help='vertical/horizontal/all/none')
     
-    parser.add_argument("--loss", default='l1', type=str)
+    parser.add_argument("--loss", default='bce', type=str)
     parser.add_argument("--total_loss", default=0.2, type=float)
     parser.add_argument("--partial_loss", default=1., type=float)
     parser.add_argument("--contrastive_loss", default=0., type=float)

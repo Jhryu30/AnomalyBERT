@@ -20,7 +20,6 @@ class AnomalyTransformer(nn.Module):
         linear_embedding : embedding layer to feed data into Transformer encoder
         transformer_encoder : Transformer encoder body
         mlp_layers : MLP layers to return output data
-        discriminator : anomaly discriminator module
         d_embed : embedding dimension (in Transformer encoder)
         patch_size : number of data points for an embedded vector
         max_seq_len : maximum length of sequence (= window size)
