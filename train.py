@@ -352,7 +352,7 @@ def main(options):
         optimizer.zero_grad()
         loss.backward()
 
-        nn.utils.clip_grad_norm_(model.parameters(), 0.1)
+        nn.utils.clip_grad_norm_(model.parameters(), options.grad_clip_norm)
 
         optimizer.step()
         scheduler.step_update(i)
@@ -394,6 +394,7 @@ if __name__ == "__main__":
     parser.add_argument("--total_loss", default=0.2, type=float)
     parser.add_argument("--partial_loss", default=1., type=float)
     parser.add_argument("--contrastive_loss", default=0., type=float)
+    parser.add_argument("--grad_clip_norm", default=1.0, type=float)
     
     options = parser.parse_args()
     main(options)
