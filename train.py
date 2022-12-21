@@ -1,4 +1,4 @@
-import os, time
+import os, time, json
 import numpy as np
 import torch
 import torch.nn as nn
@@ -13,8 +13,9 @@ from models.anomaly_transformer import get_anomaly_transformer
 
 
 def main(options):
-    train_data = np.load(config.TRAIN_DATASET[options.dataset]).copy()
-    replacing_data = train_data if options.replacing_data == None else np.load(config.TRAIN_DATASET[options.replacing_data]).copy()
+    train_data = np.load(config.TRAIN_DATASET[options.dataset]).copy().astype(np.float32)
+    replacing_data = train_data if options.replacing_data == None\
+                     else np.load(config.TRAIN_DATASET[options.replacing_data]).copy().astype(np.float32)
     
     d_data = len(train_data[0])
     numerical_column = np.array(config.NUMERICAL_COLUMNS[options.dataset])
@@ -46,6 +47,10 @@ def main(options):
     log_dir = os.path.join(config.LOG_DIR, time.strftime('%y%m%d%H%M%S_'+options.dataset, time.localtime(time.time())))
     os.mkdir(log_dir)
     os.mkdir(os.path.join(log_dir, 'state'))
+    
+    # hyperparameters save
+    with open(os.path.join(log_dir, 'hyperparameters.txt'), 'w') as f:
+        json.dump(options.__dict__, f, indent=2)
     
     summary_writer = SummaryWriter(log_dir)
     torch.save(model, os.path.join(log_dir, 'model.pt'))
