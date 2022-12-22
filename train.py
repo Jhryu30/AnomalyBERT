@@ -137,7 +137,7 @@ def main(options):
     length_adjusting_prob = peak_noising_prob - options.length_adjusting if options.loss == 'bce' else peak_noising_prob
     white_noising_prob = options.white_noising
     
-    # Soft replcaing flip options
+    # Soft replacing flip options
     if options.flip_replacing_interval == 'all':
         vertical_flip = True
         horizontal_flip = True
@@ -239,7 +239,7 @@ def main(options):
                 # Uniform replacing
                 elif typ > uniform_replacing_prob:
                     _x[target_column_numerical] = torch.rand(rep_len_num, 1, device=device)
-                    _x[target_column_categorical] = torch.randint(0, 2, size=(rep_len_cat, 1), device=device).float()
+#                     _x[target_column_categorical] = torch.randint(0, 2, size=(rep_len_cat, 1), device=device).float()
                     x_anomaly[j, tar:tar+leng] = 1
                     x[j][tar:tar+leng] = _x.transpose(0, 1)
 

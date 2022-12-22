@@ -30,7 +30,6 @@ class AnomalyTransformer(nn.Module):
         self.mlp_layers = mlp_layers
 
         self.max_seq_len = max_seq_len
-        self._max_seq_len = max_seq_len + 1
         self.patch_size = patch_size
         self.data_seq_len = patch_size * max_seq_len
     

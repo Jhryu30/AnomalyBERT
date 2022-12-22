@@ -28,7 +28,7 @@ def main(options):
             divisions = divisions.values()
     
     # Estimation settings
-    window_size = options.window_size * options.patch_size
+    window_size = model.max_seq_len * model.patch_size
     n_column = len(test_data[0]) if options.reconstruction_output else 1
     n_batch = options.batch_size
     window_sliding = options.window_sliding
@@ -111,18 +111,16 @@ def main(options):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--gpu_id", default=0, type=int)
-    parser.add_argument("--dataset", default='SMAP', type=str, help='SMAP/MSL')
+    parser.add_argument("--dataset", default='SMAP', type=str, help='SMAP/MSL/SMD')
     
     parser.add_argument("--model", required=True, type=str)
     parser.add_argument("--state_dict", required=True, type=str)
     parser.add_argument("--outfile", default=None, type=str)
     
     parser.add_argument("--data_division", default='total', type=str, help='channel/class/total')
-    parser.add_argument("--check_count", default=50000, type=int)
+    parser.add_argument("--check_count", default=5000, type=int)
     
     parser.add_argument("--batch_size", default=16, type=int)
-    parser.add_argument("--window_size", default=512, type=int)
-    parser.add_argument("--patch_size", default=4, type=int)
     parser.add_argument("--window_sliding", default=16, type=int)
     parser.add_argument('--reconstruction_output', default=False, action='store_true')
     
