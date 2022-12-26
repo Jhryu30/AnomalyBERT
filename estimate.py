@@ -9,8 +9,8 @@ import utils.config as config
 
 def main(options):
     # Load test data.
-    test_data = np.load(config.TEST_DATASET[options.dataset]).copy()
-    test_label = np.load(config.TEST_LABEL[options.dataset]).copy()
+    test_data = np.load(config.TEST_DATASET[options.dataset]).copy().astype(np.float32)
+    test_label = np.load(config.TEST_LABEL[options.dataset]).copy().astype(np.float32)
     
     # Load model.
     device = torch.device('cuda:{}'.format(options.gpu_id))
@@ -34,7 +34,7 @@ def main(options):
     window_sliding = options.window_sliding
     batch_sliding = n_batch * window_size
     _batch_sliding = n_batch * window_sliding
-    
+
     output_values = torch.zeros(len(test_data), n_column, device=device)
     count = 0
     checked_index = options.check_count
@@ -55,7 +55,7 @@ def main(options):
                 for i in range(first, first+window_size, window_sliding):
                     # Call mini-batch data.
                     x = torch.Tensor(_test_data[i:i+batch_sliding].copy()).reshape(n_batch, window_size, -1).to(device)
-
+                    
                     # Evaludate and record errors.
                     y = post_activation(model(x))
                     _output_values[i:i+batch_sliding] += y.view(-1, n_column)

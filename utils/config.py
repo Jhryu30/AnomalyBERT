@@ -38,3 +38,17 @@ CATEGORICAL_COLUMNS = {'SMAP' : range(1, 25),
                        'MSL' : range(1, 55),
                        'SMD' : (7,)
                       }
+
+
+# SMD series
+train_smd = {'SMD{}'.format(i) : DATASET_DIR+'SMD{}_train.npy'.format(i) for i in range(28)}
+test_smd = {'SMD{}'.format(i) : DATASET_DIR+'SMD{}_test.npy'.format(i) for i in range(28)}
+label_smd = {'SMD{}'.format(i) : DATASET_DIR+'SMD{}_test_label.npy'.format(i) for i in range(28)}
+numerical_smd = {'SMD{}'.format(i) : NUMERICAL_COLUMNS['SMD'] for i in range(28)}
+categorical_smd = {'SMD{}'.format(i) : (7,) for i in range(28)}
+
+TRAIN_DATASET.update(train_smd)
+TEST_DATASET.update(test_smd)
+TEST_LABEL.update(label_smd)
+NUMERICAL_COLUMNS.update(numerical_smd)
+CATEGORICAL_COLUMNS.update(categorical_smd)

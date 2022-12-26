@@ -41,6 +41,11 @@ def load_data(dataset, base_dir, output_folder):
                 label_files.append(load_and_save('test_label', filename, filename.strip('.txt'), dataset_folder, output_folder))
                 file_length.append(len(label_files[-1]))
         
+        for i, train, test, label in zip(range(len(test_files)), train_files, test_files, label_files):
+            np.save(os.path.join(output_folder, dataset + "{}_train.npy".format(i)), train)
+            np.save(os.path.join(output_folder, dataset + "{}_test.npy".format(i)), test)
+            np.save(os.path.join(output_folder, dataset + "{}_test_label.npy".format(i)), label)
+            
         train_files = np.concatenate(train_files, axis=0)
         test_files = np.concatenate(test_files, axis=0)
         label_files = np.concatenate(label_files, axis=0)
