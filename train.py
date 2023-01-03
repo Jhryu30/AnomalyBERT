@@ -375,8 +375,8 @@ if __name__ == "__main__":
     parser.add_argument("--checkpoint", default=None, type=str)
     parser.add_argument("--initial_iter", default=0, type=int)
     
-    parser.add_argument("--dataset", default='SMAP', type=str, help='SMAP/MSL/SMD')
-    parser.add_argument("--replacing_data", default=None, type=str, help='None(default)/SMAP/MSL/SMD')
+    parser.add_argument("--dataset", default='SMAP', type=str, help='SMAP/MSL/SMD/SWaT')
+    parser.add_argument("--replacing_data", default=None, type=str, help='None(default)/SMAP/MSL/SMD/SWaT')
     
     parser.add_argument("--batch_size", default=16, type=int)
     parser.add_argument("--window_size", default=512, type=int)

@@ -5,3 +5,4 @@ timm
 pytorch-model-summary
 tensorboard
 matplotlib
+openpyxl

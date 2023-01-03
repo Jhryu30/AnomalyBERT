@@ -10,6 +10,7 @@ import json
 import argparse
 
 import numpy as np
+import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 
 # makedirs(output_folder, exist_ok=True)
@@ -119,21 +120,44 @@ def load_data(dataset, base_dir, output_folder):
 
         for c in ['train', 'test']:
             concatenate_and_save(c)
+            
+    elif dataset == 'SWaT':
+        dataset_folder = os.path.join(base_dir, 'Physical')
+        normal_data = pd.read_excel(os.path.join(dataset_folder, 'SWaT_Dataset_Normal_v1.xlsx'))
+        normal_data = normal_data.iloc[1:, 1:-1].to_numpy()
+        normal_data = MinMaxScaler().fit_transform(normal_data).clip(0, 1)
+        np.save(os.path.join(output_folder, dataset + "_train.npy"), normal_data)
+        
+        abnormal_data = pd.read_excel(os.path.join(dataset_folder, 'SWaT_Dataset_Attack_v0.xlsx'))
+        abnormal_label = abnormal_data.iloc[1:, -1] == 'Attack'
+        abnormal_label = abnormal_label.to_numpy().astype(int)
+        
+        abnormal_data = abnormal_data.iloc[1:, 1:-1].to_numpy()
+        abnormal_data = MinMaxScaler().fit_transform(abnormal_data).clip(0, 1)
+        np.save(os.path.join(output_folder, dataset + "_test.npy"), abnormal_data)
+        np.save(os.path.join(output_folder, dataset + "_test_label.npy"), abnormal_label)
+        
+        
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", required=True, type=str,
-                        help="Name of dataset; SMD/SMAP/MSL")
-    parser.add_argument("--data_dir", default='', type=str,
-                        help="Directory of data folder")
+                        help="Name of dataset; SMD/SMAP/MSL/SWaT")
+    parser.add_argument("--data_dir", required=True, type=str,
+                        help="Directory of raw data folder")
+    parser.add_argument("--out_dir", default=None, type=str,
+                        help="Directory of the processed data folder")
     options = parser.parse_args()
     
-    datasets = ['SMD', 'SMAP', 'MSL']
+    datasets = ['SMD', 'SMAP', 'MSL', 'SWaT']
     
     if options.dataset in datasets:
         base_dir = options.data_dir
-        output_folder = os.path.join(base_dir, 'processed')
+        if options.out_dir == None:
+            output_folder = os.path.join(base_dir, 'processed')
+        else:
+            output_folder = options.out_dir
         if not os.path.exists(output_folder):
             os.mkdir(output_folder)
         load_data(options.dataset, base_dir, output_folder)
