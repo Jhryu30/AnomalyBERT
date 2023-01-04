@@ -185,7 +185,7 @@ def compute(options):
         
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dataset", default='SMAP', type=str, help='SMAP/MSL/SMD')
+    parser.add_argument("--dataset", default='SMAP', type=str, help='SMAP/MSL/SMD/SWaT/WADI')
     parser.add_argument("--result", required=True, type=str)
     parser.add_argument("--outfile", default=None, type=str)
     parser.add_argument("--data_division", default='total', type=str, help='channel/class/total')
