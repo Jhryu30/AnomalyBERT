@@ -12,6 +12,12 @@ def main(options):
     test_data = np.load(config.TEST_DATASET[options.dataset]).copy().astype(np.float32)
     test_label = np.load(config.TEST_LABEL[options.dataset]).copy().astype(np.float32)
     
+    # Ignore the specific columns.
+    if options.dataset in config.IGNORED_COLUMNS.keys():
+        ignored_column = np.array(config.IGNORED_COLUMNS[options.dataset])
+        remaining_column = [col for col in range(len(test_data[0])) if col not in ignored_column]
+        test_data = test_data[:, remaining_column]
+    
     # Load model.
     device = torch.device('cuda:{}'.format(options.gpu_id))
     model = torch.load(options.model, map_location=device)

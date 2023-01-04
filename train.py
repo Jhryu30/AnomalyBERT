@@ -23,6 +23,17 @@ def main(options):
     categorical_column = np.array(config.CATEGORICAL_COLUMNS[options.dataset])
     num_categorical = len(categorical_column)
     
+    # Ignore the specific columns.
+    if options.dataset in config.IGNORED_COLUMNS.keys():
+        ignored_column = np.array(config.IGNORED_COLUMNS[options.dataset])
+        remaining_column = [col for col in range(d_data) if col not in ignored_column]
+        train_data = train_data[:, remaining_column]
+        replacing_data = train_data if options.replacing_data == None else replacing_data[:, remaining_column]
+        
+        d_data = len(remaining_column)
+        numerical_column -= (numerical_column[:, None] - ignored_column[None, :] > 0).astype(int).sum(axis=1)
+        categorical_column -= (categorical_column[:, None] - ignored_column[None, :] > 0).astype(int).sum(axis=1)
+    
     window_size = options.window_size
     data_seq_len = window_size * options.patch_size
 
