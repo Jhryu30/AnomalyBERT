@@ -1,7 +1,7 @@
 import os
 
 PROJECT_DIR = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
-DATASET_DIR = '/mnt/d/ubuntu/datasets/anomaly/processed/'
+DATASET_DIR = ''
 LOG_DIR = 'logs/'
 DATA_PROPERTY_DIR = 'data/'
 
@@ -45,9 +45,9 @@ IGNORED_COLUMNS = {'SWaT' : (10,)}
 
 
 # SMD series
-train_smd = {'SMD{}'.format(i) : DATASET_DIR+'SMD{}_train.npy'.format(i) for i in range(28)}
-test_smd = {'SMD{}'.format(i) : DATASET_DIR+'SMD{}_test.npy'.format(i) for i in range(28)}
-label_smd = {'SMD{}'.format(i) : DATASET_DIR+'SMD{}_test_label.npy'.format(i) for i in range(28)}
+train_smd = {'SMD{}'.format(i) : os.path.join(DATASET_DIR, 'SMD{}_train.npy'.format(i)) for i in range(28)}
+test_smd = {'SMD{}'.format(i) : os.path.join(DATASET_DIR, 'SMD{}_test.npy'.format(i)) for i in range(28)}
+label_smd = {'SMD{}'.format(i) : os.path.join(DATASET_DIR, 'SMD{}_test_label.npy'.format(i)) for i in range(28)}
 numerical_smd = {'SMD{}'.format(i) : NUMERICAL_COLUMNS['SMD'] for i in range(28)}
 categorical_smd = {'SMD{}'.format(i) : (7,) for i in range(28)}
 
