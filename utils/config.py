@@ -6,23 +6,17 @@ LOG_DIR = 'logs/'
 DATA_PROPERTY_DIR = 'data/'
 
 
-TRAIN_DATASET = {'SMAP' : DATASET_DIR+'SMAP_train.npy',
-                 'MSL' : DATASET_DIR+'MSL_train.npy',
-                 'SMD' : DATASET_DIR+'SMD_train.npy',
-                 'SWaT' : DATASET_DIR+'SWaT_train.npy'
-                }
+DATASET_LIST = ['SMAP', 'MSL', 'SMD', 'SWaT', 'WADI']
 
-TEST_DATASET = {'SMAP' : DATASET_DIR+'SMAP_test.npy',
-                'MSL' : DATASET_DIR+'MSL_test.npy',
-                'SMD' : DATASET_DIR+'SMD_test.npy',
-                'SWaT' : DATASET_DIR+'SWaT_test.npy'
-               }
+TRAIN_DATASET = {}
+TEST_DATASET = {}
+TEST_LABEL = {}
 
-TEST_LABEL = {'SMAP' : DATASET_DIR+'SMAP_test_label.npy',
-              'MSL' : DATASET_DIR+'MSL_test_label.npy',
-              'SMD' : DATASET_DIR+'SMD_test_label.npy',
-              'SWaT' : DATASET_DIR+'SWaT_test_label.npy'
-             }
+for data_name in DATASET_LIST:
+    TRAIN_DATASET[data_name] = os.path.join(DATASET_DIR, data_name + '_train.npy')
+    TEST_DATASET[data_name] = os.path.join(DATASET_DIR, data_name + '_test.npy')
+    TEST_LABEL[data_name] = os.path.join(DATASET_DIR, data_name + '_test_label.npy')
+
 
 DATA_DIVISION = {'SMAP' : {'channel' : DATA_PROPERTY_DIR+'SMAP_test_channel.json',
                            'class' : DATA_PROPERTY_DIR+'SMAP_test_class.json'},
@@ -41,7 +35,10 @@ CATEGORICAL_COLUMNS = {'SMAP' : range(1, 25),
                        'MSL' : range(1, 55),
                        'SMD' : (7,),
                        'SWaT' : tuple([2,3,4,9] + list(range(11, 16)) + list(range(19, 25))\
-                                      + list(range(29, 34)) + [42,43,48,49,50])
+                                      + list(range(29, 34)) + [42,43,48,49,50]),
+                       'WADI' : tuple([6,7] + list(range(9, 19)) + list(range(47, 59))\
+                                      + list(range(68, 81)) + [82,84,87] + list(range(91, 97))\
+                                      + [111] + list(range(113, 120)) + [121])
                       }
 
 IGNORED_COLUMNS = {'SWaT' : (10,)}
@@ -60,5 +57,7 @@ TEST_LABEL.update(label_smd)
 NUMERICAL_COLUMNS.update(numerical_smd)
 CATEGORICAL_COLUMNS.update(categorical_smd)
 
-# SWaT update
-NUMERICAL_COLUMNS['SWaT'] = tuple([i for i in range(0, 51) if (i not in CATEGORICAL_COLUMNS['SWaT']) and (i not in IGNORED_COLUMNS['SWaT'])])
+# SWaT and WADI update
+NUMERICAL_COLUMNS['SWaT'] = tuple([i for i in range(0, 51) if (i not in CATEGORICAL_COLUMNS['SWaT'])\
+                                   and (i not in IGNORED_COLUMNS['SWaT'])])
+NUMERICAL_COLUMNS['WADI'] = tuple([i for i in range(0, 123) if (i not in CATEGORICAL_COLUMNS['WADI'])])

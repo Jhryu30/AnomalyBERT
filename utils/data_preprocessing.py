@@ -137,20 +137,37 @@ def load_data(dataset, base_dir, output_folder):
         np.save(os.path.join(output_folder, dataset + "_test.npy"), abnormal_data)
         np.save(os.path.join(output_folder, dataset + "_test_label.npy"), abnormal_label)
         
+    elif dataset == 'WADI':
+        normal_data = pd.read_csv(os.path.join(base_dir, 'WADI_14days_new.csv'))
+        normal_data = normal_data.dropna(axis='columns', how='all').dropna()
+        normal_data = normal_data.iloc[:, 3:].to_numpy()
+        normal_data = MinMaxScaler().fit_transform(normal_data).clip(0, 1)
+        np.save(os.path.join(output_folder, dataset + "_train.npy"), normal_data)
+        
+        abnormal_data = pd.read_csv(os.path.join(base_dir, 'WADI_attackdataLABLE.csv'), header=1)
+        abnormal_data = abnormal_data.dropna(axis='columns', how='all').dropna()
+        abnormal_label = abnormal_data.iloc[:, -1] == -1
+        abnormal_label = abnormal_label.to_numpy().astype(int)
+        
+        abnormal_data = abnormal_data.iloc[:, 3:-1].to_numpy()
+        abnormal_data = MinMaxScaler().fit_transform(abnormal_data).clip(0, 1)
+        np.save(os.path.join(output_folder, dataset + "_test.npy"), abnormal_data)
+        np.save(os.path.join(output_folder, dataset + "_test_label.npy"), abnormal_label)
+        
         
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", required=True, type=str,
-                        help="Name of dataset; SMD/SMAP/MSL/SWaT")
+                        help="Name of dataset; SMD/SMAP/MSL/SWaT/WADI")
     parser.add_argument("--data_dir", required=True, type=str,
                         help="Directory of raw data folder")
     parser.add_argument("--out_dir", default=None, type=str,
                         help="Directory of the processed data folder")
     options = parser.parse_args()
     
-    datasets = ['SMD', 'SMAP', 'MSL', 'SWaT']
+    datasets = ['SMD', 'SMAP', 'MSL', 'SWaT', 'WADI']
     
     if options.dataset in datasets:
         base_dir = options.data_dir
