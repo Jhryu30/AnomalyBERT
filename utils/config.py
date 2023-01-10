@@ -41,7 +41,9 @@ CATEGORICAL_COLUMNS = {'SMAP' : range(1, 25),
                                       + [111] + list(range(113, 120)) + [121])
                       }
 
-IGNORED_COLUMNS = {'SWaT' : (10,)}
+IGNORED_COLUMNS = {'SWaT' : (10,),
+                   'WADI' : (102,)
+                  }
 
 
 # SMD series
@@ -60,4 +62,5 @@ CATEGORICAL_COLUMNS.update(categorical_smd)
 # SWaT and WADI update
 NUMERICAL_COLUMNS['SWaT'] = tuple([i for i in range(0, 51) if (i not in CATEGORICAL_COLUMNS['SWaT'])\
                                    and (i not in IGNORED_COLUMNS['SWaT'])])
-NUMERICAL_COLUMNS['WADI'] = tuple([i for i in range(0, 123) if (i not in CATEGORICAL_COLUMNS['WADI'])])
+NUMERICAL_COLUMNS['WADI'] = tuple([i for i in range(0, 123) if (i not in CATEGORICAL_COLUMNS['WADI'])\
+                                   and (i not in IGNORED_COLUMNS['WADI'])])

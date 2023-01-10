@@ -16,7 +16,38 @@ def ewma(series, weighting_factor=0.9):
     return _ewma
 
 
-def f1_score(gt, pr, anomaly_rate=0.05, adjust=True):
+# Get anomaly sequences.
+def anomaly_sequence(label):
+    anomaly_args = np.argwhere(label).flatten()  # Indices for abnormal points.
+    
+    # Terms between abnormal invervals
+    terms = anomaly_args[1:] - anomaly_args[:-1]
+    terms = terms > 1
+
+    # Extract anomaly sequences.
+    sequence_args = np.argwhere(terms).flatten() + 1
+    sequence_length = list(sequence_args[1:] - sequence_args[:-1])
+    sequence_args = list(sequence_args)
+
+    sequence_args.insert(0, 0)
+    if len(sequence_args) > 1:
+        sequence_length.insert(0, sequence_args[1])
+    sequence_length.append(len(anomaly_args) - sequence_args[-1])
+
+    # Get anomaly sequence arguments.
+    sequence_args = anomaly_args[sequence_args]
+    anomaly_label_seq = np.transpose(np.array((sequence_args, sequence_args + np.array(sequence_length))))
+    return anomaly_label_seq, sequence_length
+
+
+# Interval-dependent point
+def interval_dependent_point(sequences, lengths):
+    n_intervals = len(sequences)
+    n_steps = np.sum(lengths)
+    return (n_steps / n_intervals) / lengths
+
+
+def f1_score(gt, pr, anomaly_rate=0.05, adjust=True, modify=False):
     # get anomaly intervals
     gt_aug = np.concatenate([np.zeros(1), gt, np.zeros(1)])
     gt_diff = gt_aug[1:] - gt_aug[:-1]
@@ -30,22 +61,42 @@ def f1_score(gt, pr, anomaly_rate=0.05, adjust=True):
     pa = pr.copy()
     q = np.quantile(pa, 1-anomaly_rate)
     pa = (pa > q).astype(int)
+    
+    # Modified F1
+    if modify:
+        gt_seq_args, gt_seq_lens = anomaly_sequence(gt)  # gt anomaly sequence args
+        ind_p = interval_dependent_point(gt_seq_args, gt_seq_lens)  # interval-dependent point
+        
+        # Compute TP and FN.
+        TP = 0
+        FN = 0
+        for _seq, _len, _p in zip(gt_seq_args, gt_seq_lens, ind_p):
+            n_tp = pa[_seq[0]:_seq[1]].sum()
+            n_fn = _len - n_tp
+            TP += n_tp * _p
+            FN += n_fn * _p
+            
+        # Compute TN and FP.
+        TN = ((1 - gt) * (1 - pa)).sum()
+        FP = ((1 - gt) * pa).sum()
 
-    # point adjustment
-    if adjust:
-        for s, e in intervals:
-            interval = slice(s, e)
-            if pa[interval].sum() > 0:
-                pa[interval] = 1
+    else:
+        # point adjustment
+        if adjust:
+            for s, e in intervals:
+                interval = slice(s, e)
+                if pa[interval].sum() > 0:
+                    pa[interval] = 1
 
-    # confusion matrix
-    TP = (gt * pa).sum()
-    TN = ((1 - gt) * (1 - pa)).sum()
-    FP = ((1 - gt) * pa).sum()
-    FN = (gt * (1 - pa)).sum()
+        # confusion matrix
+        TP = (gt * pa).sum()
+        TN = ((1 - gt) * (1 - pa)).sum()
+        FP = ((1 - gt) * pa).sum()
+        FN = (gt * (1 - pa)).sum()
 
-    assert (TP + TN + FP + FN) == len(gt)
+        assert (TP + TN + FP + FN) == len(gt)
 
+    # Compute p, r, f1.
     precision = TP / (TP + FP)
     recall = TP / (TP + FN)
     f1_score = 2*precision*recall/(precision+recall)
@@ -118,12 +169,13 @@ def compute(options):
                 plt.close()
         
     # Compute F1-scores.
+    f1_str = 'Modified F1-score' if options.modified_f1 else 'F1-score'
     # F1 Without PA
-    result_file.write('<F1-score without point adjustment>\n\n')
+    result_file.write('<'+f1_str+' without point adjustment>\n\n')
     best_eval = (0, 0, 0)
     best_rate = 0
     for rate in np.arange(options.min_anomaly_rate, options.max_anomaly_rate+0.001, 0.001):
-        evaluation = f1_score(test_label, output_values, rate, False)
+        evaluation = f1_score(test_label, output_values, rate, False, options.modified_f1)
         result_file.write(f'anomaly rate: {rate:.3f} | precision: {evaluation[0]:.5f} | recall: {evaluation[1]:.5f} | F1-score: {evaluation[2]:.5f}\n')
         if evaluation[2] > best_eval[2]:
             best_eval = evaluation
@@ -134,23 +186,24 @@ def compute(options):
     print(f'anomaly rate: {best_rate:.3f} | precision: {best_eval[0]:.5f} | recall: {best_eval[1]:.5f} | F1-score: {best_eval[2]:.5f}\n')
     
     # F1 With PA
-    result_file.write('<F1-score with point adjustment>\n\n')
-    best_eval = (0, 0, 0)
-    best_rate = 0
-    for rate in np.arange(options.min_anomaly_rate, options.max_anomaly_rate+0.001, 0.001):
-        evaluation = f1_score(test_label, output_values, rate, True)
-        result_file.write(f'anomaly rate: {rate:.3f} | precision: {evaluation[0]:.5f} | recall: {evaluation[1]:.5f} | F1-score: {evaluation[2]:.5f}\n')
-        if evaluation[2] > best_eval[2]:
-            best_eval = evaluation
-            best_rate = rate
-    result_file.write('\nBest F1-score\n')
-    result_file.write(f'anomaly rate: {best_rate:.3f} | precision: {best_eval[0]:.5f} | recall: {best_eval[1]:.5f} | F1-score: {best_eval[2]:.5f}\n\n\n')
-    print('Best F1-score with point adjustment')
-    print(f'anomaly rate: {best_rate:.3f} | precision: {best_eval[0]:.5f} | recall: {best_eval[1]:.5f} | F1-score: {best_eval[2]:.5f}\n')
+    if not options.modified_f1:
+        result_file.write('<F1-score with point adjustment>\n\n')
+        best_eval = (0, 0, 0)
+        best_rate = 0
+        for rate in np.arange(options.min_anomaly_rate, options.max_anomaly_rate+0.001, 0.001):
+            evaluation = f1_score(test_label, output_values, rate, True)
+            result_file.write(f'anomaly rate: {rate:.3f} | precision: {evaluation[0]:.5f} | recall: {evaluation[1]:.5f} | F1-score: {evaluation[2]:.5f}\n')
+            if evaluation[2] > best_eval[2]:
+                best_eval = evaluation
+                best_rate = rate
+        result_file.write('\nBest F1-score\n')
+        result_file.write(f'anomaly rate: {best_rate:.3f} | precision: {best_eval[0]:.5f} | recall: {best_eval[1]:.5f} | F1-score: {best_eval[2]:.5f}\n\n\n')
+        print('Best F1-score with point adjustment')
+        print(f'anomaly rate: {best_rate:.3f} | precision: {best_eval[0]:.5f} | recall: {best_eval[1]:.5f} | F1-score: {best_eval[2]:.5f}\n')
     
     if options.smooth_scores:
         # F1 Without PA
-        result_file.write('<F1-score of smoothed scores without point adjustment>\n\n')
+        result_file.write('<'+f1_str+' of smoothed scores without point adjustment>\n\n')
         best_eval = (0, 0, 0)
         best_rate = 0
         for rate in np.arange(options.min_anomaly_rate, options.max_anomaly_rate+0.001, 0.001):
@@ -165,19 +218,20 @@ def compute(options):
         print(f'anomaly rate: {best_rate:.3f} | precision: {best_eval[0]:.5f} | recall: {best_eval[1]:.5f} | F1-score: {best_eval[2]:.5f}\n')
         
         # F1 With PA
-        result_file.write('<F1-score of smoothed scores with point adjustment>\n\n')
-        best_eval = (0, 0, 0)
-        best_rate = 0
-        for rate in np.arange(options.min_anomaly_rate, options.max_anomaly_rate+0.001, 0.001):
-            evaluation = f1_score(test_label, smoothed_values, rate, True)
-            result_file.write(f'anomaly rate: {rate:.3f} | precision: {evaluation[0]:.5f} | recall: {evaluation[1]:.5f} | F1-score: {evaluation[2]:.5f}\n')
-            if evaluation[2] > best_eval[2]:
-                best_eval = evaluation
-                best_rate = rate
-        result_file.write('\nBest F1-score\n')
-        result_file.write(f'anomaly rate: {best_rate:.3f} | precision: {best_eval[0]:.5f} | recall: {best_eval[1]:.5f} | F1-score: {best_eval[2]:.5f}\n\n\n')
-        print('Best F1-score of smoothed socres with point adjustment')
-        print(f'anomaly rate: {best_rate:.3f} | precision: {best_eval[0]:.5f} | recall: {best_eval[1]:.5f} | F1-score: {best_eval[2]:.5f}\n')
+        if not options.modified_f1:
+            result_file.write('<F1-score of smoothed scores with point adjustment>\n\n')
+            best_eval = (0, 0, 0)
+            best_rate = 0
+            for rate in np.arange(options.min_anomaly_rate, options.max_anomaly_rate+0.001, 0.001):
+                evaluation = f1_score(test_label, smoothed_values, rate, True)
+                result_file.write(f'anomaly rate: {rate:.3f} | precision: {evaluation[0]:.5f} | recall: {evaluation[1]:.5f} | F1-score: {evaluation[2]:.5f}\n')
+                if evaluation[2] > best_eval[2]:
+                    best_eval = evaluation
+                    best_rate = rate
+            result_file.write('\nBest F1-score\n')
+            result_file.write(f'anomaly rate: {best_rate:.3f} | precision: {best_eval[0]:.5f} | recall: {best_eval[1]:.5f} | F1-score: {best_eval[2]:.5f}\n\n\n')
+            print('Best F1-score of smoothed socres with point adjustment')
+            print(f'anomaly rate: {best_rate:.3f} | precision: {best_eval[0]:.5f} | recall: {best_eval[1]:.5f} | F1-score: {best_eval[2]:.5f}\n')
     
     # Close file.
     result_file.close()
@@ -192,6 +246,7 @@ if __name__ == "__main__":
     
     parser.add_argument('--smooth_scores', default=False, action='store_true')
     parser.add_argument("--smoothing_weight", default=0.9, type=float)
+    parser.add_argument('--modified_f1', default=False, action='store_true')
     
     parser.add_argument('--save_figures', default=False, action='store_true')
     
