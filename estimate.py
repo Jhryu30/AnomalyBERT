@@ -7,46 +7,20 @@ import utils.config as config
 
 
 
-def main(options):
-    # Load test data.
-    test_data = np.load(config.TEST_DATASET[options.dataset]).copy().astype(np.float32)
-    test_label = np.load(config.TEST_LABEL[options.dataset]).copy().astype(np.float32)
-    
-    # Ignore the specific columns.
-    if options.dataset in config.IGNORED_COLUMNS.keys():
-        ignored_column = np.array(config.IGNORED_COLUMNS[options.dataset])
-        remaining_column = [col for col in range(len(test_data[0])) if col not in ignored_column]
-        test_data = test_data[:, remaining_column]
-    
-    # Load model.
-    device = torch.device('cuda:{}'.format(options.gpu_id))
-    model = torch.load(options.model, map_location=device)
-    model.load_state_dict(torch.load(options.state_dict, map_location='cpu'))
-    model.eval()
-    
-    # Data division
-    if options.data_division == 'total':
-        divisions = [[0, len(test_data)]]
-    else:
-        with open(config.DATA_DIVISION[options.dataset][options.data_division], 'r') as f:
-            divisions = json.load(f)
-        if isinstance(divisions, dict):
-            divisions = divisions.values()
-    
+# Estimate anomaly scores.
+def estimate(test_data, model, post_activation, out_dim, batch_size, window_sliding, divisions,
+             check_count=None, device='cpu'):
     # Estimation settings
     window_size = model.max_seq_len * model.patch_size
-    n_column = len(test_data[0]) if options.reconstruction_output else 1
-    n_batch = options.batch_size
-    window_sliding = options.window_sliding
+    n_column = out_dim
+    n_batch = batch_size
+    window_sliding = window_sliding
     batch_sliding = n_batch * window_size
     _batch_sliding = n_batch * window_sliding
 
     output_values = torch.zeros(len(test_data), n_column, device=device)
     count = 0
-    checked_index = options.check_count
-    
-    post_activation = torch.nn.Identity().to(device) if options.reconstruction_output\
-                      else torch.nn.Sigmoid().to(device)
+    checked_index = np.inf if check_count == None else check_count
     
     # Record output values.
     for division in divisions:
@@ -70,7 +44,7 @@ def main(options):
 
                     if count > checked_index:
                         print(count, 'windows are computed.')
-                        checked_index += options.check_count
+                        checked_index += check_count
 
                 _first = first
 
@@ -95,7 +69,7 @@ def main(options):
 
                 if count > checked_index:
                     print(count, 'windows are computed.')
-                    checked_index += options.check_count
+                    checked_index += check_count
 
             # Compute mean values.
             window_overlap = window_size // window_sliding
@@ -106,7 +80,43 @@ def main(options):
             
             # Record values for the division.
             output_values[division[0]:division[1]] = _output_values
-        
+            
+    return output_values
+
+
+def main(options):
+    # Load test data.
+    test_data = np.load(config.TEST_DATASET[options.dataset]).copy().astype(np.float32)
+    
+    # Ignore the specific columns.
+    if options.dataset in config.IGNORED_COLUMNS.keys():
+        ignored_column = np.array(config.IGNORED_COLUMNS[options.dataset])
+        remaining_column = [col for col in range(len(test_data[0])) if col not in ignored_column]
+        test_data = test_data[:, remaining_column]
+    
+    # Load model.
+    device = torch.device('cuda:{}'.format(options.gpu_id))
+    model = torch.load(options.model, map_location=device)
+    model.load_state_dict(torch.load(options.state_dict, map_location='cpu'))
+    model.eval()
+    
+    # Data division
+    if options.data_division == 'total':
+        divisions = [[0, len(test_data)]]
+    else:
+        with open(config.DATA_DIVISION[options.dataset][options.data_division], 'r') as f:
+            divisions = json.load(f)
+        if isinstance(divisions, dict):
+            divisions = divisions.values()
+            
+    n_column = len(test_data[0]) if options.reconstruction_output else 1
+    post_activation = torch.nn.Identity().to(device) if options.reconstruction_output\
+                      else torch.nn.Sigmoid().to(device)
+            
+    # Estimate scores.
+    output_values = estimate(test_data, model, post_activation, n_column, options.batch_size,
+                             options.window_sliding, divisions, options.check_count, device)
+    
     # Save results.
     output_values = output_values.cpu().numpy()
     outfile = options.state_dict[:-3] + '_results.npy' if options.outfile == None else options.outfile

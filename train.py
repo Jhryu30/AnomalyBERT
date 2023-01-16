@@ -10,12 +10,18 @@ from torch.utils.tensorboard import SummaryWriter
 import utils.config as config
 from models.anomaly_transformer import get_anomaly_transformer
 
+from estimate import estimate
+from compute_metrics import f1_score
+
 
 
 def main(options):
+    # Load data.
     train_data = np.load(config.TRAIN_DATASET[options.dataset]).copy().astype(np.float32)
     replacing_data = train_data if options.replacing_data == None\
                      else np.load(config.TRAIN_DATASET[options.replacing_data]).copy().astype(np.float32)
+    test_data = np.load(config.TEST_DATASET[options.dataset]).copy().astype(np.float32)
+    test_label = np.load(config.TEST_LABEL[options.dataset]).copy().astype(np.int32)
     
     d_data = len(train_data[0])
     numerical_column = np.array(config.NUMERICAL_COLUMNS[options.dataset])
@@ -29,10 +35,20 @@ def main(options):
         remaining_column = [col for col in range(d_data) if col not in ignored_column]
         train_data = train_data[:, remaining_column]
         replacing_data = train_data if options.replacing_data == None else replacing_data[:, remaining_column]
+        test_data = test_data[:, remaining_column]
         
         d_data = len(remaining_column)
         numerical_column -= (numerical_column[:, None] - ignored_column[None, :] > 0).astype(int).sum(axis=1)
         categorical_column -= (categorical_column[:, None] - ignored_column[None, :] > 0).astype(int).sum(axis=1)
+        
+    # Data division
+    if options.data_division == 'total':
+        divisions = [[0, len(test_data)]]
+    else:
+        with open(config.DATA_DIVISION[options.dataset][options.data_division], 'r') as f:
+            divisions = json.load(f)
+        if isinstance(divisions, dict):
+            divisions = divisions.values()
     
     window_size = options.window_size
     data_seq_len = window_size * options.patch_size
@@ -115,9 +131,9 @@ def main(options):
     
     def replacing_weights(interval_len):
         warmup_len = interval_len // 10
-        return np.concatenate((np.linspace(0, 0.7, num=warmup_len),
-                               np.full(interval_len-2*warmup_len, 0.7),
-                               np.linspace(0.7, 0, num=warmup_len)), axis=None)
+        return np.concatenate((np.linspace(0, options.replacing_weight, num=warmup_len),
+                               np.full(interval_len-2*warmup_len, options.replacing_weight),
+                               np.linspace(options.replacing_weight, 0, num=warmup_len)), axis=None)
     
     
     # Optimizer and scheduler
@@ -343,12 +359,29 @@ def main(options):
                     total_data_num = n_batch * data_seq_len
                     
                     acc = (pred == x_anomaly).int().sum() / total_data_num
-                    summary_writer.add_scalar('Train Loss', loss.item(), i)
-                    summary_writer.add_scalar('Accuracy', acc, i)
+                    summary_writer.add_scalar('Train/Loss', loss.item(), i)
+                    summary_writer.add_scalar('Train/Accuracy', acc, i)
                     
-                    print('iter ', i, ',\tloss : {:.10f}'.format(loss.item()),
-                          ',\taccuracy : {:.10f}'.format(acc), sep='')
-                    print()
+                    estimation = estimate(test_data, model,
+                                          sigmoid if options.loss == 'bce' else nn.Identity().to(device),
+                                          1 if options.loss == 'bce' else d_data,
+                                          n_batch, options.window_sliding, divisions, None, device)
+                    estimation = estimation[:, 0].cpu().numpy()
+                    
+                    best_eval = (0, 0, 0)
+                    best_rate = 0
+                    for rate in np.arange(0.001, 0.301, 0.001):
+                        evaluation = f1_score(test_label, estimation, rate, False, False)
+                        if evaluation[2] > best_eval[2]:
+                            best_eval = evaluation
+                            best_rate = rate
+                    summary_writer.add_scalar('Valid/Best Anomaly Rate', best_rate, i)
+                    summary_writer.add_scalar('Valid/Precision', best_eval[0], i)
+                    summary_writer.add_scalar('Valid/Recall', best_eval[1], i)
+                    summary_writer.add_scalar('Valid/F1', best_eval[2], i)
+                    
+                    print(f'iteration: {i} | loss: {loss.item():.10f} | train accuracy: {acc:.10f}')
+                    print(f'anomaly rate: {best_rate:.3f} | precision: {best_eval[0]:.5f} | recall: {best_eval[1]:.5f} | F1-score: {best_eval[2]:.5f}\n')
                     
                 else:
                     origin = rec_loss(z[:, :, numerical_column], x_true).item()
@@ -405,6 +438,10 @@ if __name__ == "__main__":
     
     parser.add_argument("--flip_replacing_interval", default='all', type=str,
                         help='vertical/horizontal/all/none')
+    parser.add_argument("--replacing_weight", default=0.7, type=float)
+    
+    parser.add_argument("--window_sliding", default=16, type=int)
+    parser.add_argument("--data_division", default='total', type=str, help='channel/class/total')
     
     parser.add_argument("--loss", default='bce', type=str)
     parser.add_argument("--total_loss", default=0.2, type=float)
