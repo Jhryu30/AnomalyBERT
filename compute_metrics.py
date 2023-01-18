@@ -172,34 +172,72 @@ def compute(options):
     f1_str = 'Modified F1-score' if options.modified_f1 else 'F1-score'
     # F1 Without PA
     result_file.write('<'+f1_str+' without point adjustment>\n\n')
-    best_eval = (0, 0, 0)
-    best_rate = 0
-    for rate in np.arange(options.min_anomaly_rate, options.max_anomaly_rate+0.001, 0.001):
-        evaluation = f1_score(test_label, output_values, rate, False, options.modified_f1)
-        result_file.write(f'anomaly rate: {rate:.3f} | precision: {evaluation[0]:.5f} | recall: {evaluation[1]:.5f} | F1-score: {evaluation[2]:.5f}\n')
-        if evaluation[2] > best_eval[2]:
-            best_eval = evaluation
-            best_rate = rate
-    result_file.write('\nBest F1-score\n')
-    result_file.write(f'anomaly rate: {best_rate:.3f} | precision: {best_eval[0]:.5f} | recall: {best_eval[1]:.5f} | F1-score: {best_eval[2]:.5f}\n\n\n')
-    print('Best F1-score without point adjustment')
-    print(f'anomaly rate: {best_rate:.3f} | precision: {best_eval[0]:.5f} | recall: {best_eval[1]:.5f} | F1-score: {best_eval[2]:.5f}\n')
     
-    # F1 With PA
-    if not options.modified_f1:
-        result_file.write('<F1-score with point adjustment>\n\n')
+    if options.data_division == 'total':
         best_eval = (0, 0, 0)
         best_rate = 0
         for rate in np.arange(options.min_anomaly_rate, options.max_anomaly_rate+0.001, 0.001):
-            evaluation = f1_score(test_label, output_values, rate, True)
+            evaluation = f1_score(test_label, output_values, rate, False, options.modified_f1)
             result_file.write(f'anomaly rate: {rate:.3f} | precision: {evaluation[0]:.5f} | recall: {evaluation[1]:.5f} | F1-score: {evaluation[2]:.5f}\n')
             if evaluation[2] > best_eval[2]:
                 best_eval = evaluation
                 best_rate = rate
         result_file.write('\nBest F1-score\n')
         result_file.write(f'anomaly rate: {best_rate:.3f} | precision: {best_eval[0]:.5f} | recall: {best_eval[1]:.5f} | F1-score: {best_eval[2]:.5f}\n\n\n')
-        print('Best F1-score with point adjustment')
+        print('Best F1-score without point adjustment')
         print(f'anomaly rate: {best_rate:.3f} | precision: {best_eval[0]:.5f} | recall: {best_eval[1]:.5f} | F1-score: {best_eval[2]:.5f}\n')
+        
+    else:
+        average_eval = np.zeros(3)
+        for division in divisions:
+            _test_label = test_label[division[0]:division[1]]
+            _output_values = output_values[division[0]:division[1]]
+            best_eval = (0, 0, 0)
+            for rate in np.arange(options.min_anomaly_rate, options.max_anomaly_rate+0.001, 0.001):
+                evaluation = f1_score(_test_label, _output_values, rate, False, options.modified_f1)
+                if evaluation[2] > best_eval[2]:
+                    best_eval = evaluation
+            average_eval += np.array(best_eval)
+        average_eval /= len(divisions)
+        result_file.write('\nBest F1-score\n')
+        result_file.write(f'precision: {average_eval[0]:.5f} | recall: {average_eval[1]:.5f} | F1-score: {average_eval[2]:.5f}\n\n\n')
+        print('Best F1-score without point adjustment')
+        print(f'precision: {average_eval[0]:.5f} | recall: {average_eval[1]:.5f} | F1-score: {average_eval[2]:.5f}\n')
+    
+    # F1 With PA
+    if not options.modified_f1:
+        result_file.write('<F1-score with point adjustment>\n\n')
+        
+        if options.data_division == 'total':
+            best_eval = (0, 0, 0)
+            best_rate = 0
+            for rate in np.arange(options.min_anomaly_rate, options.max_anomaly_rate+0.001, 0.001):
+                evaluation = f1_score(test_label, output_values, rate, True)
+                result_file.write(f'anomaly rate: {rate:.3f} | precision: {evaluation[0]:.5f} | recall: {evaluation[1]:.5f} | F1-score: {evaluation[2]:.5f}\n')
+                if evaluation[2] > best_eval[2]:
+                    best_eval = evaluation
+                    best_rate = rate
+            result_file.write('\nBest F1-score\n')
+            result_file.write(f'anomaly rate: {best_rate:.3f} | precision: {best_eval[0]:.5f} | recall: {best_eval[1]:.5f} | F1-score: {best_eval[2]:.5f}\n\n\n')
+            print('Best F1-score with point adjustment')
+            print(f'anomaly rate: {best_rate:.3f} | precision: {best_eval[0]:.5f} | recall: {best_eval[1]:.5f} | F1-score: {best_eval[2]:.5f}\n')
+            
+        else:
+            average_eval = np.zeros(3)
+            for division in divisions:
+                _test_label = test_label[division[0]:division[1]]
+                _output_values = output_values[division[0]:division[1]]
+                best_eval = (0, 0, 0)
+                for rate in np.arange(options.min_anomaly_rate, options.max_anomaly_rate+0.001, 0.001):
+                    evaluation = f1_score(_test_label, _output_values, rate, True)
+                    if evaluation[2] > best_eval[2]:
+                        best_eval = evaluation
+                average_eval += np.array(best_eval)
+            average_eval /= len(divisions)
+            result_file.write('\nBest F1-score\n')
+            result_file.write(f'precision: {average_eval[0]:.5f} | recall: {average_eval[1]:.5f} | F1-score: {average_eval[2]:.5f}\n\n\n')
+            print('Best F1-score with point adjustment')
+            print(f'precision: {average_eval[0]:.5f} | recall: {average_eval[1]:.5f} | F1-score: {average_eval[2]:.5f}\n')
     
     if options.smooth_scores:
         # F1 Without PA

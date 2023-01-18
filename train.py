@@ -362,11 +362,13 @@ def main(options):
                     summary_writer.add_scalar('Train/Loss', loss.item(), i)
                     summary_writer.add_scalar('Train/Accuracy', acc, i)
                     
+                    model.eval()
                     estimation = estimate(test_data, model,
                                           sigmoid if options.loss == 'bce' else nn.Identity().to(device),
                                           1 if options.loss == 'bce' else d_data,
                                           n_batch, options.window_sliding, divisions, None, device)
                     estimation = estimation[:, 0].cpu().numpy()
+                    model.train()
                     
                     best_eval = (0, 0, 0)
                     best_rate = 0
