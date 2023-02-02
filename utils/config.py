@@ -25,6 +25,13 @@ DATA_DIVISION = {'SMAP' : {'channel' : DATA_PROPERTY_DIR+'SMAP_test_channel.json
                  'SMD' : {'channel' : DATA_PROPERTY_DIR+'SMD_test_channel.json'}
                 }
 
+DEFAULT_DIVISION = {'SMAP' : 'channel',
+                    'MSL' : 'channel',
+                    'SMD' : 'channel',
+                    'SWaT' : 'total',
+                    'WADI' : 'total'
+                   }
+
 
 NUMERICAL_COLUMNS = {'SMAP' : (0,),
                      'MSL' : (0,),
@@ -50,12 +57,14 @@ IGNORED_COLUMNS = {'SWaT' : (10,),
 train_smd = {'SMD{}'.format(i) : os.path.join(DATASET_DIR, 'SMD{}_train.npy'.format(i)) for i in range(28)}
 test_smd = {'SMD{}'.format(i) : os.path.join(DATASET_DIR, 'SMD{}_test.npy'.format(i)) for i in range(28)}
 label_smd = {'SMD{}'.format(i) : os.path.join(DATASET_DIR, 'SMD{}_test_label.npy'.format(i)) for i in range(28)}
+division_smd = {'SMD{}'.format(i) : 'total' for i in range(28)}
 numerical_smd = {'SMD{}'.format(i) : NUMERICAL_COLUMNS['SMD'] for i in range(28)}
 categorical_smd = {'SMD{}'.format(i) : (7,) for i in range(28)}
 
 TRAIN_DATASET.update(train_smd)
 TEST_DATASET.update(test_smd)
 TEST_LABEL.update(label_smd)
+DEFAULT_DIVISION.update(division_smd)
 NUMERICAL_COLUMNS.update(numerical_smd)
 CATEGORICAL_COLUMNS.update(categorical_smd)
 
