@@ -230,9 +230,10 @@ def main(options):
                 x_rep.append(x[j][tar:tar+leng].clone())
                 _x = x_rep[-1].clone().transpose(0, 1)
                 rep_len_num = len(dim_num[dim_num])
-                rep_len_cat = len(dim_cat[dim_cat])
+                rep_len_cat = len(dim_cat[dim_cat]) if len(dim_cat) > 0 else 0
                 target_column_numerical = numerical_column[dim_num]
-                target_column_categorical = categorical_column[dim_cat]
+                if rep_len_cat > 0:
+                    target_column_categorical = categorical_column[dim_cat]
                 
                 # External interval replacing
                 if typ > soft_replacing_prob:
@@ -253,15 +254,16 @@ def main(options):
                     _x[target_column_numerical] = _x_temp * weights + _x[target_column_numerical] * (1 - weights)
 
                     # Replacing for categorical columns
-                    _x_temp = []
-                    col_cat = np.random.choice(categorical_column, size=rep_len_cat)
-                    for _col, _rep in zip(col_cat, rep[-rep_len_cat:]):
-                        _x_temp.append(torch.from_numpy(replacing_data[_rep:_rep+leng, _col].copy()))
-                    _x_temp = torch.stack(_x_temp).to(device)
-                    _x[target_column_categorical] = _x_temp
+                    if rep_len_cat > 0:
+                        _x_temp = []
+                        col_cat = np.random.choice(categorical_column, size=rep_len_cat)
+                        for _col, _rep in zip(col_cat, rep[-rep_len_cat:]):
+                            _x_temp.append(torch.from_numpy(replacing_data[_rep:_rep+leng, _col].copy()))
+                        _x_temp = torch.stack(_x_temp).to(device)
+                        _x[target_column_categorical] = _x_temp
 
-                    x_anomaly[j, tar:tar+leng] = 1
-                    x[j][tar:tar+leng] = _x.transpose(0, 1)
+                        x_anomaly[j, tar:tar+leng] = 1
+                        x[j][tar:tar+leng] = _x.transpose(0, 1)
 
                 # Uniform replacing
                 elif typ > uniform_replacing_prob:
@@ -307,7 +309,7 @@ def main(options):
                             x[j][tar:tar+leng] = torch.Tensor(train_data[origin_index+tar-_leng:origin_index+tar+leng:scale].copy()).to(device)
                             x_anomaly[j, tar:tar+leng] = 1
                     
-                # White noising
+                # White noising (deprecated)
                 elif typ < white_noising_prob:
                     _x[target_column_numerical] = (_x[target_column_numerical]\
                                                    + torch.normal(mean=0., std=0.003, size=(rep_len_num, leng), device=device))\

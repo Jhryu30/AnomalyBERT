@@ -12,9 +12,10 @@ def estimate(test_data, model, post_activation, out_dim, batch_size, window_slid
              check_count=None, device='cpu'):
     # Estimation settings
     window_size = model.max_seq_len * model.patch_size
+    assert window_size % window_sliding == 0
+    
     n_column = out_dim
     n_batch = batch_size
-    window_sliding = window_sliding
     batch_sliding = n_batch * window_size
     _batch_sliding = n_batch * window_sliding
 
@@ -28,6 +29,7 @@ def estimate(test_data, model, post_activation, out_dim, batch_size, window_slid
         last_window = data_len - window_size + 1
         _test_data = test_data[division[0]:division[1]]
         _output_values = torch.zeros(data_len, n_column, device=device)
+        n_overlap = torch.zeros(data_len, device=device)
     
         with torch.no_grad():
             _first = -batch_sliding
@@ -39,6 +41,7 @@ def estimate(test_data, model, post_activation, out_dim, batch_size, window_slid
                     # Evaludate and record errors.
                     y = post_activation(model(x))
                     _output_values[i:i+batch_sliding] += y.view(-1, n_column)
+                    n_overlap[i:i+batch_sliding] += 1
 
                     count += n_batch
 
@@ -54,7 +57,7 @@ def estimate(test_data, model, post_activation, out_dim, batch_size, window_slid
                                    list(range(_first+_batch_sliding, last_window, _batch_sliding)) + [last_window]):
                 # Call mini-batch data.
                 x = []
-                for i in range(first, last, window_sliding):
+                for i in list(range(first, last-1, window_sliding)) + [last-1]:
                     x.append(torch.Tensor(_test_data[i:i+window_size].copy()))
 
                 # Reconstruct data.
@@ -62,8 +65,9 @@ def estimate(test_data, model, post_activation, out_dim, batch_size, window_slid
 
                 # Evaludate and record errors.
                 y = post_activation(model(x))
-                for i, j in enumerate(range(first, last, window_sliding)):
+                for i, j in enumerate(list(range(first, last-1, window_sliding)) + [last-1]):
                     _output_values[j:j+window_size] += y[i]
+                    n_overlap[j:j+window_size] += 1
 
                 count += n_batch
 
@@ -72,11 +76,7 @@ def estimate(test_data, model, post_activation, out_dim, batch_size, window_slid
                     checked_index += check_count
 
             # Compute mean values.
-            window_overlap = window_size // window_sliding
-            n_overlap = torch.full((data_len,), window_overlap)
-            n_overlap[:window_size-window_sliding] = torch.repeat_interleave(torch.arange(1, window_overlap), window_sliding)
-            n_overlap[-window_size+window_sliding:] = torch.repeat_interleave(torch.arange(window_overlap-1, 0, -1), window_sliding)
-            _output_values = _output_values / n_overlap.unsqueeze(-1).to(device)
+            _output_values = _output_values / n_overlap.unsqueeze(-1)
             
             # Record values for the division.
             output_values[division[0]:division[1]] = _output_values
@@ -137,7 +137,7 @@ if __name__ == "__main__":
     parser.add_argument("--check_count", default=5000, type=int)
     
     parser.add_argument("--batch_size", default=16, type=int)
-    parser.add_argument("--window_sliding", default=16, type=int)
+    parser.add_argument("--window_sliding", default=16, type=int, help='Window size should be divisible by this value.')
     parser.add_argument('--reconstruction_output', default=False, action='store_true')
     
     options = parser.parse_args()
