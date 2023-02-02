@@ -83,7 +83,7 @@ def main(options):
     torch.save(model, os.path.join(log_dir, 'model.pt'))
 
     # Train model.
-    max_iters = options.max_steps
+    max_iters = options.max_steps + 1
     n_batch = options.batch_size
     valid_index_list = np.arange(len(train_data) - data_seq_len)
 #     anomaly_weight = options.partial_loss / options.total_loss
@@ -418,7 +418,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--gpu_id", default=0, type=int)
     parser.add_argument("--lr", default=1e-4, type=float)
-    parser.add_argument("--max_steps", default=100000, type=int)
+    parser.add_argument("--max_steps", default=150000, type=int)
     parser.add_argument("--summary_steps", default=500, type=int)
     parser.add_argument("--checkpoint", default=None, type=str)
     parser.add_argument("--initial_iter", default=0, type=int)
