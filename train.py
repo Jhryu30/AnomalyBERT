@@ -42,10 +42,11 @@ def main(options):
         categorical_column -= (categorical_column[:, None] - ignored_column[None, :] > 0).astype(int).sum(axis=1)
         
     # Data division
-    if options.data_division == 'total':
+    data_division = config.DEFAULT_DIVISION[options.dataset] if options.data_division == None else options.data_division 
+    if data_division == 'total':
         divisions = [[0, len(test_data)]]
     else:
-        with open(config.DATA_DIVISION[options.dataset][options.data_division], 'r') as f:
+        with open(config.DATA_DIVISION[options.dataset][data_division], 'r') as f:
             divisions = json.load(f)
         if isinstance(divisions, dict):
             divisions = divisions.values()
@@ -71,6 +72,8 @@ def main(options):
     if options.checkpoint != None:
         model.load_state_dict(torch.load(options.checkpoint, map_location='cpu'))
 
+    if not os.path.exists(config.LOG_DIR):
+        os.mkdir(config.LOG_DIR)
     log_dir = os.path.join(config.LOG_DIR, time.strftime('%y%m%d%H%M%S_'+options.dataset, time.localtime(time.time())))
     os.mkdir(log_dir)
     os.mkdir(os.path.join(log_dir, 'state'))
@@ -445,7 +448,7 @@ if __name__ == "__main__":
     parser.add_argument("--replacing_weight", default=0.7, type=float)
     
     parser.add_argument("--window_sliding", default=16, type=int)
-    parser.add_argument("--data_division", default='total', type=str, help='channel/class/total')
+    parser.add_argument("--data_division", default=None, type=str, help='channel/class/total')
     
     parser.add_argument("--loss", default='bce', type=str)
     parser.add_argument("--total_loss", default=0.2, type=float)

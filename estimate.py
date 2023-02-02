@@ -101,10 +101,11 @@ def main(options):
     model.eval()
     
     # Data division
-    if options.data_division == 'total':
+    data_division = config.DEFAULT_DIVISION[options.dataset] if options.data_division == None else options.data_division 
+    if data_division == 'total':
         divisions = [[0, len(test_data)]]
     else:
-        with open(config.DATA_DIVISION[options.dataset][options.data_division], 'r') as f:
+        with open(config.DATA_DIVISION[options.dataset][data_division], 'r') as f:
             divisions = json.load(f)
         if isinstance(divisions, dict):
             divisions = divisions.values()
@@ -133,7 +134,7 @@ if __name__ == "__main__":
     parser.add_argument("--state_dict", required=True, type=str)
     parser.add_argument("--outfile", default=None, type=str)
     
-    parser.add_argument("--data_division", default='total', type=str, help='channel/class/total')
+    parser.add_argument("--data_division", default=None, type=str, help='channel/class/total')
     parser.add_argument("--check_count", default=5000, type=int)
     
     parser.add_argument("--batch_size", default=16, type=int)
