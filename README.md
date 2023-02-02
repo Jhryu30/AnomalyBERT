@@ -1,15 +1,14 @@
 # AnomalyBERT: Transformer-based Anomaly Detector
 
-This is the code for **Self-supervised Transformer for Time Series Anomaly Detection**.
+This is the code for **Self-supervised Transformer for Time Series Anomaly Detection using Data Degradation Scheme**.
 
 ## Installation
 
-Please clone our repository and install the packages in `requirements.txt`.
+Please clone our repository at `path/to/repository/` and install the packages in `requirements.txt`.
 Before installing the packages, we recommend installing Python 3.8 and Pytorch 1.9 with CUDA.
 
 ```
-cd path/to/repository/
-git clone https://github.com/Jhryu30/AnomalyBERT.git
+git clone https://github.com/Jhryu30/AnomalyBERT.git path/to/repository/
 
 conda create --name your_env_name python=3.8
 conda activate your_env_name
@@ -18,36 +17,17 @@ pip install torch==1.9.0+cuXXX -f https://download.pytorch.org/whl/torch_stable.
 pip install -r requirements.txt
 ```
 
-We use SMAP public dataset from NASA. You can download the dataset and preprocess it.
-(데이터 전처리 파일 미완성이므로 아직 사용 X. 일단 전처리된 데이터는 google drive 같은 곳에 올릴 예정)
-
-```
-cd path/to/data/
-wget https://s3-us-west-2.amazonaws.com/telemanom/data.zip
-unzip data.zip
-
-wget https://raw.githubusercontent.com/khundman/telemanom/master/labeled_anomalies.csv
-mv labeled_anomalies.csv data/
-
-cd path/to/repository/
-python3 utils/data_preprocessing.py --dataset=SMAP --data_dir=path/to/data/
-```
-
+We use five public datasets, SMAP, MSL, SMD, SWaT, and WADI.
+Following the instruction in [here](utils/DATA_PREPARATION.md), you can download and preprocess the datasets.
 After preprocessing, you need to edit your dataset directory in `utils/config.py`.
 
 ```
-DATASET_DIR = 'path/to/data/'
+DATASET_DIR = 'path/to/dataset/processed/'
 ```
 
 ## Training
 
 We provide the training code for our model.
-Before training, you need to create an empty folder for log files.
-
-```
-mkdir logs  # Create log folder once.
-```
-
 For example, to train a model of 6-layer Transformer body on SMAP dataset, run:
 
 ```
@@ -70,7 +50,7 @@ For example, you can estimate anomaly scores of SMAP test set divided by channel
 
 ```
 python3 estimate.py --dataset=SMAP --model=logs/YYMMDDhhmmss_SMAP/model.pt --state_dict=logs/YYMMDDhhmmss_SMAP/state_dict.pt \
---data_division=channel --window_sliding=16
+--window_sliding=16
 ```
 
 Now you will obtain results (npy) file that contains the estimated anomaly scores.
