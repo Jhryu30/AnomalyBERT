@@ -278,18 +278,18 @@ def compute(options):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset", default='SMAP', type=str, help='SMAP/MSL/SMD/SWaT/WADI')
-    parser.add_argument("--result", required=True, type=str)
-    parser.add_argument("--outfile", default=None, type=str)
-    parser.add_argument("--data_division", default='total', type=str, help='channel/class/total')
+    parser.add_argument("--result", required=True, type=str, help='result file (.npy) obtained from estimate.py')
+    parser.add_argument("--outfile", default=None, type=str, help='output file name (.txt) to save computation logs')
     
-    parser.add_argument('--smooth_scores', default=False, action='store_true')
-    parser.add_argument("--smoothing_weight", default=0.9, type=float)
-    parser.add_argument('--modified_f1', default=False, action='store_true')
+    parser.add_argument('--smooth_scores', default=False, action='store_true', help='option for smoothing scores (ewma)')
+    parser.add_argument("--smoothing_weight", default=0.9, type=float, help='ewma weight when smoothing socres')
+    parser.add_argument('--modified_f1', default=False, action='store_true', help='modified f1 scores (not used now)')
     
-    parser.add_argument('--save_figures', default=False, action='store_true')
+    parser.add_argument('--save_figures', default=False, action='store_true', help='save figures of data and anomaly scores')
+    parser.add_argument("--data_division", default='total', type=str, help='data division info when saving figures; channel/class/total')
     
-    parser.add_argument("--min_anomaly_rate", default=0.001, type=float)
-    parser.add_argument("--max_anomaly_rate", default=0.3, type=float)
+    parser.add_argument("--min_anomaly_rate", default=0.001, type=float, help='minimum threshold rate')
+    parser.add_argument("--max_anomaly_rate", default=0.3, type=float, help='maximum threshold rate')
     
     options = parser.parse_args()
     compute(options)

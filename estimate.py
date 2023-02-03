@@ -130,16 +130,16 @@ if __name__ == "__main__":
     parser.add_argument("--gpu_id", default=0, type=int)
     parser.add_argument("--dataset", default='SMAP', type=str, help='SMAP/MSL/SMD/SWaT/WADI')
     
-    parser.add_argument("--model", required=True, type=str)
-    parser.add_argument("--state_dict", required=True, type=str)
-    parser.add_argument("--outfile", default=None, type=str)
+    parser.add_argument("--model", required=True, type=str, help='model file (.pt) to estimate')
+    parser.add_argument("--state_dict", required=True, type=str, help='state dict file (.pt) to estimate')
+    parser.add_argument("--outfile", default=None, type=str, help='output file name (.npy) to save anomaly scores')
     
-    parser.add_argument("--data_division", default=None, type=str, help='channel/class/total')
-    parser.add_argument("--check_count", default=5000, type=int)
+    parser.add_argument("--data_division", default=None, type=str, help='data division; None(defualt)/channel/class/total')
+    parser.add_argument("--check_count", default=5000, type=int, help='check count of window computing')
     
     parser.add_argument("--batch_size", default=16, type=int)
-    parser.add_argument("--window_sliding", default=16, type=int, help='Window size should be divisible by this value.')
-    parser.add_argument('--reconstruction_output', default=False, action='store_true')
+    parser.add_argument("--window_sliding", default=16, type=int, help='sliding steps of windows; window size should be divisible by this value')
+    parser.add_argument('--reconstruction_output', default=False, action='store_true', help='option for reconstruction model (deprecated)')
     
     options = parser.parse_args()
     main(options)
