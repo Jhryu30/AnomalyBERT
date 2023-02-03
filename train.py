@@ -51,8 +51,8 @@ def main(options):
         if isinstance(divisions, dict):
             divisions = divisions.values()
     
-    window_size = options.window_size
-    data_seq_len = window_size * options.patch_size
+    n_features = options.n_features
+    data_seq_len = n_features * options.patch_size
 
     # Define model.
     device = torch.device('cuda:{}'.format(options.gpu_id))
@@ -61,7 +61,7 @@ def main(options):
                                     patch_size=options.patch_size,
                                     d_embed=options.d_embed,
                                     hidden_dim_rate=4.,
-                                    max_seq_len=window_size,
+                                    max_seq_len=n_features,
                                     positional_encoding=None,
                                     relative_position_embedding=True,
                                     transformer_n_layer=options.n_layer,
@@ -112,7 +112,7 @@ def main(options):
         denom = torch.matmul(norms.unsqueeze(-1), norms.unsqueeze(-2)) + 1e-8
         return similarity / denom
     
-    diag_mask = torch.eye(window_size, device=device).bool().unsqueeze(0)
+    diag_mask = torch.eye(n_features, device=device).bool().unsqueeze(0)
 
     def contrastive_loss(features, anomaly_label):
         similarity = similarity_map(features)
@@ -126,7 +126,7 @@ def main(options):
         positive_term = similarity
         positive_term[anomaly] = 0
         positive_term = positive_term.transpose(-1, -2)[normal].mean(dim=-1) - similarity_sum[normal]
-        positive_term /= (n_anomaly - window_size)[normal]
+        positive_term /= (n_anomaly - n_features)[normal]
 
         negative_term = similarity_sum[anomaly]
 
@@ -421,40 +421,50 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--gpu_id", default=0, type=int)
     parser.add_argument("--lr", default=1e-4, type=float)
-    parser.add_argument("--max_steps", default=150000, type=int)
-    parser.add_argument("--summary_steps", default=500, type=int)
-    parser.add_argument("--checkpoint", default=None, type=str)
-    parser.add_argument("--initial_iter", default=0, type=int)
+    parser.add_argument("--max_steps", default=150000, type=int, help='maximum_training_steps')
+    parser.add_argument("--summary_steps", default=500, type=int, help='steps for summarizing and saving of training log')
+    parser.add_argument("--checkpoint", default=None, type=str, help='load checkpoint file')
+    parser.add_argument("--initial_iter", default=0, type=int, help='initial iteration for training')
     
     parser.add_argument("--dataset", default='SMAP', type=str, help='SMAP/MSL/SMD/SWaT/WADI')
-    parser.add_argument("--replacing_data", default=None, type=str, help='None(default)/SMAP/MSL/SMD/SWaT/WADI')
+    parser.add_argument("--replacing_data", default=None, type=str, help='external data for soft replacement; None(default)/SMAP/MSL/SMD/SWaT/WADI')
     
     parser.add_argument("--batch_size", default=16, type=int)
-    parser.add_argument("--window_size", default=512, type=int)
-    parser.add_argument("--patch_size", default=4, type=int)
-    parser.add_argument("--d_embed", default=512, type=int)
-    parser.add_argument("--n_layer", default=6, type=int)
+    parser.add_argument("--n_features", default=512, type=int, help='number of features for a window')
+    parser.add_argument("--patch_size", default=4, type=int, help='number of data points in a patch')
+    parser.add_argument("--d_embed", default=512, type=int, help='embedding dimension of feature')
+    parser.add_argument("--n_layer", default=6, type=int, help='number of transformer layers')
     parser.add_argument("--dropout", default=0.1, type=float)
-    parser.add_argument("--replacing_rate_max", default=0.15, type=float)
+    parser.add_argument("--replacing_rate_max", default=0.15, type=float, help='maximum ratio of replacing interval length to window size')
     
-    parser.add_argument("--soft_replacing", default=0.5, type=float)
-    parser.add_argument("--uniform_replacing", default=0.15, type=float)
-    parser.add_argument("--peak_noising", default=0.15, type=float)
-    parser.add_argument("--length_adjusting", default=0.1, type=float)
-    parser.add_argument("--white_noising", default=0.0, type=float)
+    parser.add_argument("--soft_replacing", default=0.5, type=float, help='probability for soft replacement')
+    parser.add_argument("--uniform_replacing", default=0.15, type=float, help='probability for uniform replacement')
+    parser.add_argument("--peak_noising", default=0.15, type=float, help='probability for peak noise')
+    parser.add_argument("--length_adjusting", default=0.0, type=float, help='probability for length adjustment')
+    parser.add_argument("--white_noising", default=0.0, type=float, help='probability for white noise (deprecated)')
     
     parser.add_argument("--flip_replacing_interval", default='all', type=str,
-                        help='vertical/horizontal/all/none')
-    parser.add_argument("--replacing_weight", default=0.7, type=float)
+                        help='allowance for random flipping in soft replacement; vertical/horizontal/all/none')
+    parser.add_argument("--replacing_weight", default=0.7, type=float, help='weight for external interval in soft replacement')
     
-    parser.add_argument("--window_sliding", default=16, type=int)
-    parser.add_argument("--data_division", default=None, type=str, help='channel/class/total')
+    parser.add_argument("--window_sliding", default=16, type=int, help='sliding steps of windows for validation')
+    parser.add_argument("--data_division", default=None, type=str, help='data division for validation; None(default)/channel/class/total')
     
-    parser.add_argument("--loss", default='bce', type=str)
-    parser.add_argument("--total_loss", default=0.2, type=float)
-    parser.add_argument("--partial_loss", default=1., type=float)
-    parser.add_argument("--contrastive_loss", default=0., type=float)
+    parser.add_argument("--loss", default='bce', type=str, help='loss type')
+    parser.add_argument("--total_loss", default=0.2, type=float, help='total loss weight (deprecated)')
+    parser.add_argument("--partial_loss", default=1., type=float, help='partial loss weight (deprecated)')
+    parser.add_argument("--contrastive_loss", default=0., type=float, help='contrastive loss weight (deprecated)')
     parser.add_argument("--grad_clip_norm", default=1.0, type=float)
     
+    parser.add_argument("--default_options", default=None, type=str, help='default options for datasets; None(default)/SMAP/MSL/SMD/SWaT/WADI')
+    
     options = parser.parse_args()
+    if options.default_options != None:
+        if options.default_options.startswith('SMD'):
+            default_options = options.default_options
+            options = torch.load('data/default_options_SMD.pt')
+            options.dataset = default_options
+        else:
+            options = torch.load('data/default_options_'+options.default_options+'.pt')
+    
     main(options)
