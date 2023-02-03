@@ -41,6 +41,12 @@ python3 train.py --dataset=MSL --patch_size=2 --soft_replacing=0.5 --uniform_rep
 --length_adjusting=0.1
 ```
 
+You can use the default option for training each dataset, as we did in our paper.
+
+```
+python3 train.py --default_options=SMAP # or any dataset name in MSL/SMD/SWaT/WADI and subset of SMD; SMD0 ~ SMD27
+```
+
 If you want to customize the model and training settings, please check the options in `train.py`.
 
 ## Anomaly score estimation and metric computation
