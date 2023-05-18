@@ -97,7 +97,8 @@ def main(options):
     # Load model.
     device = torch.device('cuda:{}'.format(options.gpu_id))
     model = torch.load(options.model, map_location=device)
-    model.load_state_dict(torch.load(options.state_dict, map_location='cpu'))
+    if options.state_dict != None:
+        model.load_state_dict(torch.load(options.state_dict, map_location='cpu'))
     model.eval()
     
     # Data division
@@ -131,7 +132,7 @@ if __name__ == "__main__":
     parser.add_argument("--dataset", default='SMAP', type=str, help='SMAP/MSL/SMD/SWaT/WADI')
     
     parser.add_argument("--model", required=True, type=str, help='model file (.pt) to estimate')
-    parser.add_argument("--state_dict", required=True, type=str, help='state dict file (.pt) to estimate')
+    parser.add_argument("--state_dict", default=None, type=str, help='state dict file (.pt) to estimate')
     parser.add_argument("--outfile", default=None, type=str, help='output file name (.npy) to save anomaly scores')
     
     parser.add_argument("--data_division", default=None, type=str, help='data division; None(defualt)/channel/class/total')

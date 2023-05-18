@@ -216,8 +216,9 @@ def main(options):
         
         replacing_dim_numerical = replacing_dim_numerical\
                                   - np.maximum(replacing_dim_numerical.min(axis=1, keepdims=True), 0.3) <= 0.001
-        replacing_dim_categorical = replacing_dim_categorical\
-                                    - np.maximum(replacing_dim_categorical.min(axis=1, keepdims=True), 0.3) <= 0.001
+        if num_categorical > 0:
+            replacing_dim_categorical = replacing_dim_categorical\
+                                        - np.maximum(replacing_dim_categorical.min(axis=1, keepdims=True), 0.3) <= 0.001
         
 #         replacing_dim = np.empty(n_batch, d_data, dtype=bool)
 #         replacing_dim[numerical_column] = replacing_dim_numerical

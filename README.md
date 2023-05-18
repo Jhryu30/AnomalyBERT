@@ -13,7 +13,7 @@ git clone https://github.com/Jhryu30/AnomalyBERT.git path/to/repository/
 conda create --name your_env_name python=3.8
 conda activate your_env_name
 
-pip install torch==1.9.0+cuXXX -f https://download.pytorch.org/whl/torch_stable.html  # cuXXX for your CUDA setting
+pip install torch==1.9.0+cu111 -f https://download.pytorch.org/whl/torch_stable.html  # example CUDA setting
 pip install -r requirements.txt
 ```
 
@@ -24,6 +24,13 @@ After preprocessing, you need to edit your dataset directory in `utils/config.py
 ```
 DATASET_DIR = 'path/to/dataset/processed/'
 ```
+
+## Demo
+
+We release our trained models on SWaT/WADI/SMAP/MSL. 
+You can download the files from [here](https://drive.google.com/drive/folders/1PhMwdGsSnrQgs16DPgBPngwV6Fvliatd?usp=sharing), and we recommend placing it in `logs/best_checkpoints/` folder.
+Now you can run our demo code in `demo.ipynb` and see how AnomalyBERT works.
+
 
 ## Training
 
