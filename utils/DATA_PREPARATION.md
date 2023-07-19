@@ -25,7 +25,7 @@ git clone https://github.com/smallcowbaby/OmniAnomaly.git
 
 ### SWaT & WADI
 
-To download SWaT and WADI datasets, you have to request access to the files at [here](https://itrust.sutd.edu.sg/itrust-labs_datasets/dataset_info/).
+To download SWaT and WADI datasets, you have to request access to the files at [here](https://itrust.sutd.edu.sg/itrust-labs_datasets/).
 After you receive the download links, please create folders for both datasets `SWaT/` and `WADI/`, and download "SWaT.A1 & A2_Dec 2015/Physical" folder for SWaT and "WADI.A2_19 Nov 2019" folder for WADI.
 
 The structure of your dataset directory should be as follows:
