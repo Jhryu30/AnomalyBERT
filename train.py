@@ -266,8 +266,8 @@ def main(options):
                         _x_temp = torch.stack(_x_temp).to(device)
                         _x[target_column_categorical] = _x_temp
 
-                        x_anomaly[j, tar:tar+leng] = 1
-                        x[j][tar:tar+leng] = _x.transpose(0, 1)
+                    x_anomaly[j, tar:tar+leng] = 1
+                    x[j][tar:tar+leng] = _x.transpose(0, 1)
 
                 # Uniform replacing
                 elif typ > uniform_replacing_prob:
